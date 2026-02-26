@@ -1,0 +1,104 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configura Akari Manager",
+        "description": "Scegli come aggiungere il tuo dispositivo Akari RPi.",
+        "data": {
+          "method": "Metodo di scoperta"
+        }
+      },
+      "mqtt_discovery": {
+        "title": "Dispositivi Akari Trovati",
+        "description": "I seguenti dispositivi Akari RPi sono stati trovati sulla rete. Seleziona quello da aggiungere.",
+        "data": {
+          "rpi_id": "Dispositivo"
+        }
+      },
+      "manual": {
+        "title": "Configurazione Manuale",
+        "description": "Inserisci i dati di connessione del tuo Akari RPi.",
+        "data": {
+          "host": "Host / Indirizzo IP",
+          "port": "Porta",
+          "api_key": "API Key (opzionale)"
+        }
+      },
+      "confirm": {
+        "title": "Conferma Connessione",
+        "description": "Connessione a **{rpi_id}** su {host}:{port}. Inserisci l'API key se richiesta.",
+        "data": {
+          "api_key": "API Key (opzionale)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossibile connettersi al dispositivo Akari. Verifica host e porta.",
+      "invalid_auth": "API key non valida. Controlla le credenziali.",
+      "mqtt_no_devices_found": "Nessun dispositivo Akari trovato via MQTT. Passaggio alla configurazione manuale.",
+      "unknown": "Errore imprevisto."
+    },
+    "abort": {
+      "already_configured": "Questo dispositivo Akari è già configurato."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opzioni Akari Manager",
+        "data": {
+          "port": "Porta",
+          "api_key": "API Key"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossibile connettersi con le nuove impostazioni.",
+      "invalid_auth": "API key non valida."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "cpu_temperature": {
+        "name": "Temperatura CPU"
+      },
+      "ram_used": {
+        "name": "RAM Utilizzata"
+      },
+      "ram_total": {
+        "name": "RAM Totale"
+      },
+      "uptime": {
+        "name": "Uptime"
+      }
+    },
+    "binary_sensor": {
+      "module_mqtt": {
+        "name": "Modulo MQTT"
+      },
+      "module_mcp": {
+        "name": "Adattatore MCP"
+      },
+      "module_gpio": {
+        "name": "Adattatore GPIO"
+      },
+      "module_modbus": {
+        "name": "Adattatore Modbus"
+      },
+      "module_ds18b20": {
+        "name": "Adattatore DS18B20"
+      },
+      "overlay_active": {
+        "name": "Filesystem Overlay"
+      }
+    },
+    "button": {
+      "restart_service": {
+        "name": "Riavvia Servizio"
+      },
+      "reload_config": {
+        "name": "Ricarica Config"
+      }
+    }
+  }
+}

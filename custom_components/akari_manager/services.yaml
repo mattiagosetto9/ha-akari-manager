@@ -1,0 +1,74 @@
+get_config_section:
+  name: Get Config Section
+  description: >
+    Read a configuration section from an Akari RPi and display the result
+    as a persistent notification in Home Assistant.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: >
+        The config entry ID of the Akari device. Find it in
+        Settings → Devices & Services → Akari Manager → entry details.
+      required: true
+      selector:
+        text:
+    section:
+      name: Section
+      description: "Configuration section to read (mqtt, devices, covers, sensors, modbus, system)."
+      required: true
+      selector:
+        select:
+          options:
+            - mqtt
+            - devices
+            - covers
+            - sensors
+            - modbus
+            - system
+
+update_config_section:
+  name: Update Config Section
+  description: >
+    Write new values to a configuration section on an Akari RPi.
+    If the response indicates a restart is required, a notification will be shown.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: The config entry ID of the Akari device.
+      required: true
+      selector:
+        text:
+    section:
+      name: Section
+      description: "Configuration section to update (mqtt, devices, covers, sensors, modbus, system)."
+      required: true
+      selector:
+        select:
+          options:
+            - mqtt
+            - devices
+            - covers
+            - sensors
+            - modbus
+            - system
+    data:
+      name: Data
+      description: >
+        A mapping with the new configuration values for the chosen section.
+        Only the provided keys will be updated (PUT semantics depend on the RPi API).
+      required: true
+      selector:
+        object:
+
+get_devices:
+  name: Get Devices
+  description: >
+    Fetch the list of configured devices and their current states from an Akari RPi
+    and display the result as a persistent notification.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: The config entry ID of the Akari device.
+      required: true
+      selector:
+        text:
