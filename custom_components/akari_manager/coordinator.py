@@ -22,17 +22,17 @@ class AkariCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self,
         hass: HomeAssistant,
         client: AkariApiClient,
-        rpi_id: str,
+        device_id: str,
     ) -> None:
         """Initialize the coordinator."""
         super().__init__(
             hass,
             _LOGGER,
-            name=f"{DOMAIN}_{rpi_id}",
+            name=f"{DOMAIN}_{device_id}",
             update_interval=timedelta(seconds=UPDATE_INTERVAL_SECONDS),
         )
         self.client = client
-        self.rpi_id = rpi_id
+        self.device_id = device_id
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch status and system info from the Akari API."""
@@ -44,7 +44,7 @@ class AkariCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except AkariAuthError as err:
             raise UpdateFailed(f"Authentication error: {err}") from err
         except AkariConnectionError as err:
-            raise UpdateFailed(f"Cannot connect to RPi: {err}") from err
+            raise UpdateFailed(f"Cannot connect to Akari device: {err}") from err
 
         return {
             "status": status,

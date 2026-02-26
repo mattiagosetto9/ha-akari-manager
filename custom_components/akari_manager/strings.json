@@ -3,21 +3,21 @@
     "step": {
       "user": {
         "title": "Set up Akari Manager",
-        "description": "Choose how to add your Akari RPi device.",
+        "description": "Choose how to add your Akari device.",
         "data": {
           "method": "Discovery method"
         }
       },
       "mqtt_discovery": {
         "title": "Discovered Akari Devices",
-        "description": "The following Akari RPi devices were found on the network. Select the one you want to add.",
+        "description": "The following Akari devices were found on the network. Select the one you want to add.",
         "data": {
-          "rpi_id": "Device"
+          "device_id": "Device"
         }
       },
       "manual": {
         "title": "Manual Configuration",
-        "description": "Enter the connection details for your Akari RPi.",
+        "description": "Enter the connection details for your Akari device.",
         "data": {
           "host": "Host / IP address",
           "port": "Port",
@@ -26,7 +26,7 @@
       },
       "confirm": {
         "title": "Confirm Connection",
-        "description": "Connecting to **{rpi_id}** at {host}:{port}. Enter the API key if required.",
+        "description": "Connecting to **{device_id}** at {host}:{port}. Enter the API key if required.",
         "data": {
           "api_key": "API Key (optional)"
         }

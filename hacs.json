@@ -1,8 +1,8 @@
 {
   "name": "Akari Manager",
   "domain": "akari_manager",
-  "documentation": "https://github.com/akari/akari-manager",
-  "issue_tracker": "https://github.com/akari/akari-manager/issues",
+  "documentation": "https://github.com/mattiagosetto9/ha-akari-manager",
+  "issue_tracker": "https://github.com/mattiagosetto9/ha-akari-manager/issues",
   "homeassistant": "2023.6.0",
   "iot_class": "local_polling"
 }

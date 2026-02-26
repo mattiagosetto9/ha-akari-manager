@@ -16,7 +16,7 @@ from .api_client import AkariApiClient, AkariAuthError, AkariConnectionError
 from .const import (
     CONF_API_KEY,
     CONF_API_URL,
-    CONF_RPI_ID,
+    CONF_DEVICE_ID,
     CONFIG_SECTIONS,
     DOMAIN,
     PLATFORMS,
@@ -33,7 +33,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Akari Manager from a config entry."""
     api_url: str = entry.data[CONF_API_URL]
     api_key: str = entry.data.get(CONF_API_KEY, "")
-    rpi_id: str = entry.data[CONF_RPI_ID]
+    device_id: str = entry.data[CONF_DEVICE_ID]
 
     session = async_get_clientsession(hass)
     client = AkariApiClient(api_url, api_key, session)
@@ -42,12 +42,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         await client.get_status()
     except AkariAuthError as err:
-        _LOGGER.error("Authentication failed for %s: %s", rpi_id, err)
+        _LOGGER.error("Authentication failed for %s: %s", device_id, err)
         return False
     except AkariConnectionError as err:
         raise ConfigEntryNotReady(f"Cannot connect to Akari at {api_url}: {err}") from err
 
-    coordinator = AkariCoordinator(hass, client, rpi_id)
+    coordinator = AkariCoordinator(hass, client, device_id)
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator

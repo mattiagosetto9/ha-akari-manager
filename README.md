@@ -1,10 +1,10 @@
 # Akari Manager — HACS Integration for Home Assistant
 
-Custom component that integrates Akari RPi firmware nodes into Home Assistant.
+Custom component that integrates Akari firmware nodes into Home Assistant.
 
 ## Features
 
-- **MQTT Discovery**: automatically finds Akari RPi devices from retained `home/+/info` messages
+- **MQTT Discovery**: automatically finds Akari devices from retained `home/+/info` messages
 - **Diagnostic entities**: CPU temperature, RAM used/total, uptime
 - **Module status**: binary sensors for MQTT, MCP, GPIO, Modbus, DS18B20 adapters + overlay filesystem
 - **Action buttons**: Restart Service, Reload Config
@@ -12,7 +12,7 @@ Custom component that integrates Akari RPi firmware nodes into Home Assistant.
 
 ## Architectural principle
 
-This integration does **not** create entities for lights, switches, covers, or sensors — those come from the MQTT Discovery published by the RPi firmware itself. Akari Manager only manages the diagnostic/administrative layer.
+This integration does **not** create entities for lights, switches, covers, or sensors — those come from the MQTT Discovery published by the Akari firmware itself. Akari Manager only manages the diagnostic/administrative layer.
 
 ## Installation (HACS)
 
@@ -29,18 +29,18 @@ Copy `custom_components/akari_manager/` into `<config>/custom_components/` and r
 
 ### MQTT Discovery (recommended)
 
-Make sure your RPi is publishing on `home/<rpi_id>/info` (retained). The integration
+Make sure your Akari device is publishing on `home/<device_id>/info` (retained). The integration
 will find it automatically within ~5 seconds and pre-fill the host and port.
 
 ### Manual
 
-Enter the RPi IP, port (default 8080), and optional API key.
+Enter the device IP, port (default 8080), and optional API key.
 
 ## Services
 
 ### `akari_manager.get_config_section`
 
-Reads a config section from the RPi and shows it as a persistent notification.
+Reads a config section from the device and shows it as a persistent notification.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -49,7 +49,7 @@ Reads a config section from the RPi and shows it as a persistent notification.
 
 ### `akari_manager.update_config_section`
 
-Writes new values to a config section on the RPi.
+Writes new values to a config section on the device.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -59,7 +59,7 @@ Writes new values to a config section on the RPi.
 
 ### `akari_manager.get_devices`
 
-Fetches the list of devices and their states from the RPi.
+Fetches the list of devices and their states from the Akari device.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -67,10 +67,10 @@ Fetches the list of devices and their states from the RPi.
 
 ## Device layout
 
-Each RPi becomes one HA device:
+Each Akari device becomes one HA device:
 
 ```
-Device: "RPi Zona Giorno"
+Device: "Akari Zona Giorno"
   Sensors:       CPU Temp · RAM Used · RAM Total · Uptime
   Binary sensors: MQTT · MCP · GPIO · Modbus · DS18B20 · Overlay FS
   Buttons:       Restart Service · Reload Config

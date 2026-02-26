@@ -16,7 +16,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_API_KEY, CONF_API_URL, CONF_RPI_ID, DOMAIN
+from .const import CONF_API_KEY, CONF_API_URL, CONF_DEVICE_ID, DOMAIN
 from .coordinator import AkariCoordinator
 from .entity import AkariEntity
 
@@ -75,12 +75,12 @@ async def async_setup_entry(
 ) -> None:
     """Set up Akari diagnostic sensors from a config entry."""
     coordinator: AkariCoordinator = hass.data[DOMAIN][entry.entry_id]
-    rpi_id: str = entry.data[CONF_RPI_ID]
-    rpi_name: str = entry.title
+    device_id: str = entry.data[CONF_DEVICE_ID]
+    device_name: str = entry.title
     api_url: str = entry.data[CONF_API_URL]
 
     async_add_entities(
-        AkariSensor(coordinator, description, rpi_id, rpi_name, api_url)
+        AkariSensor(coordinator, description, device_id, device_name, api_url)
         for description in SENSOR_DESCRIPTIONS
     )
 
@@ -94,14 +94,14 @@ class AkariSensor(AkariEntity, SensorEntity):
         self,
         coordinator: AkariCoordinator,
         description: AkariSensorEntityDescription,
-        rpi_id: str,
-        rpi_name: str,
+        device_id: str,
+        device_name: str,
         api_url: str,
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator, rpi_id, rpi_name, api_url)
+        super().__init__(coordinator, device_id, device_name, api_url)
         self.entity_description = description
-        self._attr_unique_id = f"{rpi_id}_{description.key}"
+        self._attr_unique_id = f"{device_id}_{description.key}"
 
     @property
     def native_value(self) -> Any:

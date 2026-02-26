@@ -1,7 +1,7 @@
 get_config_section:
   name: Get Config Section
   description: >
-    Read a configuration section from an Akari RPi and display the result
+    Read a configuration section from an Akari device and display the result
     as a persistent notification in Home Assistant.
   fields:
     entry_id:
@@ -29,7 +29,7 @@ get_config_section:
 update_config_section:
   name: Update Config Section
   description: >
-    Write new values to a configuration section on an Akari RPi.
+    Write new values to a configuration section on an Akari device.
     If the response indicates a restart is required, a notification will be shown.
   fields:
     entry_id:
@@ -55,7 +55,7 @@ update_config_section:
       name: Data
       description: >
         A mapping with the new configuration values for the chosen section.
-        Only the provided keys will be updated (PUT semantics depend on the RPi API).
+        Only the provided keys will be updated (PUT semantics depend on the Akari API).
       required: true
       selector:
         object:
@@ -63,7 +63,7 @@ update_config_section:
 get_devices:
   name: Get Devices
   description: >
-    Fetch the list of configured devices and their current states from an Akari RPi
+    Fetch the list of configured devices and their current states from an Akari device
     and display the result as a persistent notification.
   fields:
     entry_id:

@@ -1,12 +1,12 @@
 {
   "domain": "akari_manager",
   "name": "Akari Manager",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "dependencies": ["mqtt"],
   "requirements": [],
   "codeowners": [],
   "iot_class": "local_polling",
   "config_flow": true,
-  "documentation": "https://github.com/akari/akari-manager",
-  "issue_tracker": "https://github.com/akari/akari-manager/issues"
+  "documentation": "https://github.com/mattiagosetto9/ha-akari-manager",
+  "issue_tracker": "https://github.com/mattiagosetto9/ha-akari-manager/issues"
 }

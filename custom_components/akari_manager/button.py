@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .api_client import AkariApiClient, AkariConnectionError
-from .const import CONF_API_URL, CONF_RPI_ID, DOMAIN
+from .const import CONF_API_URL, CONF_DEVICE_ID, DOMAIN
 from .coordinator import AkariCoordinator
 from .entity import AkariEntity
 
@@ -48,18 +48,18 @@ async def async_setup_entry(
 ) -> None:
     """Set up Akari action buttons from a config entry."""
     coordinator: AkariCoordinator = hass.data[DOMAIN][entry.entry_id]
-    rpi_id: str = entry.data[CONF_RPI_ID]
-    rpi_name: str = entry.title
+    device_id: str = entry.data[CONF_DEVICE_ID]
+    device_name: str = entry.title
     api_url: str = entry.data[CONF_API_URL]
 
     async_add_entities(
-        AkariButton(coordinator, description, rpi_id, rpi_name, api_url)
+        AkariButton(coordinator, description, device_id, device_name, api_url)
         for description in BUTTON_DESCRIPTIONS
     )
 
 
 class AkariButton(AkariEntity, ButtonEntity):
-    """A button that triggers an action on the Akari RPi."""
+    """A button that triggers an action on an Akari device."""
 
     entity_description: AkariButtonEntityDescription
 
@@ -67,14 +67,14 @@ class AkariButton(AkariEntity, ButtonEntity):
         self,
         coordinator: AkariCoordinator,
         description: AkariButtonEntityDescription,
-        rpi_id: str,
-        rpi_name: str,
+        device_id: str,
+        device_name: str,
         api_url: str,
     ) -> None:
         """Initialize the button."""
-        super().__init__(coordinator, rpi_id, rpi_name, api_url)
+        super().__init__(coordinator, device_id, device_name, api_url)
         self.entity_description = description
-        self._attr_unique_id = f"{rpi_id}_{description.key}"
+        self._attr_unique_id = f"{device_id}_{description.key}"
         self._attr_icon = description.icon
 
     async def async_press(self) -> None:
@@ -86,18 +86,18 @@ class AkariButton(AkariEntity, ButtonEntity):
             if action == "restart":
                 await client.restart()
                 self.hass.components.persistent_notification.async_create(
-                    f"Restart command sent to {self._rpi_name}.",
+                    f"Restart command sent to {self._device_name}.",
                     title="Akari Manager",
-                    notification_id=f"akari_{self._rpi_id}_restart",
+                    notification_id=f"akari_{self._device_id}_restart",
                 )
             elif action == "reload":
                 await client.reload_config()
                 # Force an immediate coordinator refresh so entities update
                 await self.coordinator.async_request_refresh()
                 self.hass.components.persistent_notification.async_create(
-                    f"Config reloaded on {self._rpi_name}.",
+                    f"Config reloaded on {self._device_name}.",
                     title="Akari Manager",
-                    notification_id=f"akari_{self._rpi_id}_reload",
+                    notification_id=f"akari_{self._device_id}_reload",
                 )
         except AkariConnectionError as err:
-            _LOGGER.error("Failed to execute %s on %s: %s", action, self._rpi_id, err)
+            _LOGGER.error("Failed to execute %s on %s: %s", action, self._device_id, err)

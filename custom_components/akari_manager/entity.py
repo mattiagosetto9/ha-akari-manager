@@ -16,25 +16,25 @@ class AkariEntity(CoordinatorEntity[AkariCoordinator]):
     def __init__(
         self,
         coordinator: AkariCoordinator,
-        rpi_id: str,
-        rpi_name: str,
+        device_id: str,
+        device_name: str,
         api_url: str,
     ) -> None:
         """Initialize the entity."""
         super().__init__(coordinator)
-        self._rpi_id = rpi_id
-        self._rpi_name = rpi_name
+        self._device_id = device_id
+        self._device_name = device_name
         self._api_url = api_url
 
     @property
     def device_info(self) -> DeviceInfo:
-        """Return device info for this RPi."""
+        """Return device info for this Akari device."""
         sys_info = self.coordinator.data.get("system_info", {}) if self.coordinator.data else {}
         return DeviceInfo(
-            identifiers={(DOMAIN, self._rpi_id)},
-            name=self._rpi_name,
+            identifiers={(DOMAIN, self._device_id)},
+            name=self._device_name,
             manufacturer="Akari",
-            model="Raspberry Pi",
+            model="Akari",
             sw_version=sys_info.get("version"),
             configuration_url=self._api_url,
         )

@@ -27,7 +27,7 @@ from .api_client import AkariApiClient, AkariAuthError, AkariConnectionError
 from .const import (
     CONF_API_KEY,
     CONF_API_URL,
-    CONF_RPI_ID,
+    CONF_DEVICE_ID,
     DOMAIN,
     MQTT_DISCOVERY_TIMEOUT,
     MQTT_DISCOVERY_TOPIC,
@@ -49,7 +49,7 @@ class AkariManagerConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         """Initialize."""
-        self._discovered_rpis: dict[str, dict] = {}  # rpi_id -> {host, port, name}
+        self._discovered_devices: dict[str, dict] = {}  # device_id -> {host, port, name}
         self._pending_data: dict[str, Any] = {}
 
     async def async_step_user(
@@ -84,10 +84,10 @@ class AkariManagerConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Listen on home/+/info for retained messages."""
         if user_input is not None:
-            rpi_id = user_input["rpi_id"]
-            info = self._discovered_rpis[rpi_id]
+            device_id = user_input["device_id"]
+            info = self._discovered_devices[device_id]
             self._pending_data = {
-                CONF_RPI_ID: rpi_id,
+                CONF_DEVICE_ID: device_id,
                 CONF_HOST: info["host"],
                 CONF_PORT: info["port"],
             }
@@ -102,12 +102,12 @@ class AkariManagerConfigFlow(ConfigFlow, domain=DOMAIN):
                 payload = json.loads(msg.payload)
                 parts = msg.topic.split("/")
                 if len(parts) >= 2:
-                    rpi_id = parts[1]
+                    device_id = parts[1]
                     host = payload.get("host") or payload.get("ip")
                     port = int(payload.get("port", DEFAULT_PORT))
-                    name = payload.get("name") or payload.get("hostname") or rpi_id
+                    name = payload.get("name") or payload.get("hostname") or device_id
                     if host:
-                        discovered[rpi_id] = {"host": host, "port": port, "name": name}
+                        discovered[device_id] = {"host": host, "port": port, "name": name}
             except (json.JSONDecodeError, KeyError, ValueError):
                 pass
 
@@ -119,28 +119,28 @@ class AkariManagerConfigFlow(ConfigFlow, domain=DOMAIN):
 
         # Filter out already-configured entries
         existing_ids = {
-            entry.data.get(CONF_RPI_ID)
+            entry.data.get(CONF_DEVICE_ID)
             for entry in self.hass.config_entries.async_entries(DOMAIN)
         }
-        new_rpis = {k: v for k, v in discovered.items() if k not in existing_ids}
+        new_devices = {k: v for k, v in discovered.items() if k not in existing_ids}
 
-        if not new_rpis:
+        if not new_devices:
             # Nothing found — fall back to manual
             return await self.async_step_manual(
                 errors={"base": "mqtt_no_devices_found"}
             )
 
-        self._discovered_rpis = new_rpis
+        self._discovered_devices = new_devices
         options = [
-            {"value": rpi_id, "label": f"{info['name']} ({info['host']}:{info['port']})"}
-            for rpi_id, info in new_rpis.items()
+            {"value": device_id, "label": f"{info['name']} ({info['host']}:{info['port']})"}
+            for device_id, info in new_devices.items()
         ]
 
         return self.async_show_form(
             step_id="mqtt_discovery",
             data_schema=vol.Schema(
                 {
-                    vol.Required("rpi_id"): SelectSelector(
+                    vol.Required("device_id"): SelectSelector(
                         SelectSelectorConfig(
                             options=options,
                             mode=SelectSelectorMode.LIST,
@@ -164,21 +164,21 @@ class AkariManagerConfigFlow(ConfigFlow, domain=DOMAIN):
             api_key = user_input.get(CONF_API_KEY, "").strip()
             api_url = _build_api_url(host, port)
 
-            # Try to determine rpi_id from status endpoint
+            # Try to determine device_id from status endpoint
             session = async_get_clientsession(self.hass)
             client = AkariApiClient(api_url, api_key, session)
             try:
                 status = await client.get_status()
-                rpi_id = status.get("id") or status.get("rpi_id") or host
+                device_id = status.get("id") or status.get("device_id") or host
             except AkariAuthError:
                 errors["base"] = "invalid_auth"
             except AkariConnectionError:
                 errors["base"] = "cannot_connect"
             else:
-                await self.async_set_unique_id(rpi_id)
+                await self.async_set_unique_id(device_id)
                 self._abort_if_unique_id_configured()
                 self._pending_data = {
-                    CONF_RPI_ID: rpi_id,
+                    CONF_DEVICE_ID: device_id,
                     CONF_HOST: host,
                     CONF_PORT: port,
                     CONF_API_KEY: api_key,
@@ -213,7 +213,7 @@ class AkariManagerConfigFlow(ConfigFlow, domain=DOMAIN):
         port = pending.get(CONF_PORT, DEFAULT_PORT)
         api_key = pending.get(CONF_API_KEY, "")
         api_url = pending.get(CONF_API_URL) or _build_api_url(host, port)
-        rpi_id = pending.get(CONF_RPI_ID, "")
+        device_id = pending.get(CONF_DEVICE_ID, "")
 
         if user_input is not None:
             api_key = user_input.get(CONF_API_KEY, api_key).strip()
@@ -223,7 +223,7 @@ class AkariManagerConfigFlow(ConfigFlow, domain=DOMAIN):
             client = AkariApiClient(api_url_final, api_key, session)
             try:
                 status = await client.get_status()
-                resolved_id = status.get("id") or status.get("rpi_id") or rpi_id
+                resolved_id = status.get("id") or status.get("device_id") or device_id
             except AkariAuthError:
                 errors["base"] = "invalid_auth"
             except AkariConnectionError:
@@ -236,7 +236,7 @@ class AkariManagerConfigFlow(ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(
                     title=title,
                     data={
-                        CONF_RPI_ID: resolved_id,
+                        CONF_DEVICE_ID: resolved_id,
                         CONF_API_URL: api_url_final,
                         CONF_API_KEY: api_key,
                     },
@@ -247,7 +247,7 @@ class AkariManagerConfigFlow(ConfigFlow, domain=DOMAIN):
             description_placeholders={
                 "host": host,
                 "port": str(port),
-                "rpi_id": rpi_id,
+                "device_id": device_id,
             },
             data_schema=vol.Schema(
                 {

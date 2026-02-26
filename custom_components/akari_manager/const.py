@@ -4,7 +4,7 @@ DOMAIN = "akari_manager"
 PLATFORMS = ["sensor", "binary_sensor", "button"]
 
 # Config entry keys
-CONF_RPI_ID = "rpi_id"
+CONF_DEVICE_ID = "device_id"
 CONF_API_URL = "api_url"
 CONF_API_KEY = "api_key"
 
