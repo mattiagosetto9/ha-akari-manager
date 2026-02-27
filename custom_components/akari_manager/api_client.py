@@ -81,7 +81,7 @@ class AkariApiClient:
                 f"Unexpected response {response.status} from {url}"
             )
 
-        return await response.json()
+        return await response.json(content_type=None)
 
     async def get_status(self) -> dict:
         """GET /api/status — module states."""

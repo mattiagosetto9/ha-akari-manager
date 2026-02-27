@@ -11,7 +11,7 @@ CONF_API_KEY = "api_key"
 # API paths
 API_STATUS = "/api/status"
 API_SYSTEM_INFO = "/api/system/info"
-API_SYSTEM_LOGS = "/api/logs"
+API_SYSTEM_LOGS = "/api/system/logs"
 API_CONFIG = "/api/config"
 API_CONFIG_SECTION = "/api/config/{section}"
 API_RELOAD = "/api/config/reload"

@@ -114,8 +114,10 @@ class AkariManagerConfigFlow(ConfigFlow, domain=DOMAIN):
         unsubscribe = await mqtt.async_subscribe(
             self.hass, MQTT_DISCOVERY_TOPIC, _on_message
         )
-        await asyncio.sleep(MQTT_DISCOVERY_TIMEOUT)
-        unsubscribe()
+        try:
+            await asyncio.sleep(MQTT_DISCOVERY_TIMEOUT)
+        finally:
+            unsubscribe()
 
         # Filter out already-configured entries
         existing_ids = {

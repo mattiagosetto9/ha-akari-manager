@@ -5,11 +5,12 @@ import logging
 from dataclasses import dataclass
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
+from homeassistant.components.persistent_notification import async_create as pn_create
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .api_client import AkariApiClient, AkariConnectionError
+from .api_client import AkariApiClient, AkariAuthError, AkariConnectionError
 from .const import CONF_API_URL, CONF_DEVICE_ID, DOMAIN
 from .coordinator import AkariCoordinator
 from .entity import AkariEntity
@@ -85,7 +86,8 @@ class AkariButton(AkariEntity, ButtonEntity):
         try:
             if action == "restart":
                 await client.restart()
-                self.hass.components.persistent_notification.async_create(
+                pn_create(
+                    self.hass,
                     f"Restart command sent to {self._device_name}.",
                     title="Akari Manager",
                     notification_id=f"akari_{self._device_id}_restart",
@@ -94,10 +96,11 @@ class AkariButton(AkariEntity, ButtonEntity):
                 await client.reload_config()
                 # Force an immediate coordinator refresh so entities update
                 await self.coordinator.async_request_refresh()
-                self.hass.components.persistent_notification.async_create(
+                pn_create(
+                    self.hass,
                     f"Config reloaded on {self._device_name}.",
                     title="Akari Manager",
                     notification_id=f"akari_{self._device_id}_reload",
                 )
-        except AkariConnectionError as err:
+        except (AkariConnectionError, AkariAuthError) as err:
             _LOGGER.error("Failed to execute %s on %s: %s", action, self._device_id, err)

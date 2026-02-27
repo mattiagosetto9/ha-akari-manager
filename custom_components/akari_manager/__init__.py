@@ -7,6 +7,7 @@ from typing import Any
 
 import aiohttp
 
+from homeassistant.components.persistent_notification import async_create as pn_create
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -95,14 +96,16 @@ def _register_services(hass: HomeAssistant) -> None:
             data = await coordinator.client.get_config_section(section)
         except (AkariConnectionError, AkariAuthError) as err:
             _LOGGER.error("get_config_section failed: %s", err)
-            hass.components.persistent_notification.async_create(
+            pn_create(
+                hass,
                 f"Error reading config section '{section}':\n{err}",
                 title="Akari Manager",
                 notification_id=f"akari_{entry_id}_config_error",
             )
             return
 
-        hass.components.persistent_notification.async_create(
+        pn_create(
+            hass,
             f"**Config section: {section}**\n```json\n{json.dumps(data, indent=2)}\n```",
             title="Akari Manager — Config",
             notification_id=f"akari_{entry_id}_config_{section}",
@@ -117,7 +120,8 @@ def _register_services(hass: HomeAssistant) -> None:
             result = await coordinator.client.update_config_section(section, new_data)
         except (AkariConnectionError, AkariAuthError) as err:
             _LOGGER.error("update_config_section failed: %s", err)
-            hass.components.persistent_notification.async_create(
+            pn_create(
+                hass,
                 f"Error updating config section '{section}':\n{err}",
                 title="Akari Manager",
                 notification_id=f"akari_{entry_id}_update_error",
@@ -127,7 +131,8 @@ def _register_services(hass: HomeAssistant) -> None:
         msg = f"Config section '{section}' updated successfully."
         if result.get("restart_required"):
             msg += "\n\n**Restart required** for changes to take effect. Use the Restart Service button."
-        hass.components.persistent_notification.async_create(
+        pn_create(
+            hass,
             msg,
             title="Akari Manager — Config Updated",
             notification_id=f"akari_{entry_id}_updated_{section}",
@@ -140,14 +145,16 @@ def _register_services(hass: HomeAssistant) -> None:
             devices = await coordinator.client.get_devices()
         except (AkariConnectionError, AkariAuthError) as err:
             _LOGGER.error("get_devices failed: %s", err)
-            hass.components.persistent_notification.async_create(
+            pn_create(
+                hass,
                 f"Error fetching devices:\n{err}",
                 title="Akari Manager",
                 notification_id=f"akari_{entry_id}_devices_error",
             )
             return
 
-        hass.components.persistent_notification.async_create(
+        pn_create(
+            hass,
             f"**Devices on {entry_id}**\n```json\n{json.dumps(devices, indent=2)}\n```",
             title="Akari Manager — Devices",
             notification_id=f"akari_{entry_id}_devices",
