@@ -62,7 +62,7 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
             hass,
             webcomponent_name="akari-manager-panel",
             frontend_url_path="akari-manager",
-            sidebar_title="Akari",
+            sidebar_title="Akari Manager",
             sidebar_icon="mdi:chip",
             module_url="/akari_manager_panel.js",
             require_admin=True,
