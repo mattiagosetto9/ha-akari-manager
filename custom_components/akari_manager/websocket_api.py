@@ -37,13 +37,18 @@ def _get_coordinator(hass: HomeAssistant, entry_id: str):
 )
 @websocket_api.async_response
 async def ws_devices(hass, connection, msg):
-    """Return list of configured Akari entries."""
+    """Return list of ALL configured Akari entries (including offline)."""
+    from homeassistant.config_entries import ConfigEntryState
+
     entries = []
-    for entry_id, coordinator in hass.data.get(DOMAIN, {}).items():
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+        online = entry.state == ConfigEntryState.LOADED
         entries.append({
-            "entry_id": entry_id,
-            "device_id": coordinator.device_id,
-            "name": coordinator.name,
+            "entry_id": entry.entry_id,
+            "device_id": entry.data.get("device_id", ""),
+            "name": entry.title,
+            "online": online,
         })
     connection.send_result(msg["id"], {"devices": entries})
 

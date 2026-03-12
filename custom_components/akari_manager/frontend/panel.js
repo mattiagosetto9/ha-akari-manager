@@ -63,11 +63,13 @@ class AkariManagerPanel extends HTMLElement {
     this._diag = null;
     this._status = null;
     this._loading = false;
+    this._error = "";
     this._cfgSection = "";
     this._cfgData = null;
     this._cfgOriginal = null;
     this._cfgLoading = false;
     this._cfgMsg = "";
+    this._cfgError = "";
   }
 
   set hass(h) {
@@ -82,21 +84,31 @@ class AkariManagerPanel extends HTMLElement {
     return this._hass.callWS({ type, ...params });
   }
 
+  get _selectedDevice() {
+    return this._devices.find(d => d.entry_id === this._entry);
+  }
+
+  get _isOnline() {
+    const dev = this._selectedDevice;
+    return dev && dev.online;
+  }
+
   async _init() {
     try {
       const r = await this._ws("akari_manager/devices");
       this._devices = r.devices || [];
       if (this._devices.length && !this._entry) {
         this._entry = this._devices[0].entry_id;
-        await this._refresh();
+        if (this._isOnline) await this._refresh();
       }
     } catch (e) { console.error("akari init:", e); }
     this._render();
   }
 
   async _refresh() {
-    if (!this._entry) return;
+    if (!this._entry || !this._isOnline) return;
     this._loading = true;
+    this._error = "";
     this._render();
     try {
       const [diag, st] = await Promise.all([
@@ -105,7 +117,12 @@ class AkariManagerPanel extends HTMLElement {
       ]);
       this._diag = diag;
       this._status = st;
-    } catch (e) { console.error("akari refresh:", e); }
+    } catch (e) {
+      console.error("akari refresh:", e);
+      this._error = "Impossibile contattare il dispositivo";
+      this._diag = null;
+      this._status = null;
+    }
     this._loading = false;
     this._render();
   }
@@ -113,6 +130,15 @@ class AkariManagerPanel extends HTMLElement {
   async _loadCfg(section) {
     if (!this._entry) return;
     this._cfgSection = section;
+    this._cfgError = "";
+
+    if (!this._isOnline) {
+      this._cfgData = null;
+      this._cfgError = "Dispositivo non raggiungibile";
+      this._render();
+      return;
+    }
+
     this._cfgLoading = true;
     this._cfgMsg = "";
     this._render();
@@ -120,9 +146,11 @@ class AkariManagerPanel extends HTMLElement {
       const data = await this._ws("akari_manager/config_get", { entry_id: this._entry, section });
       this._cfgData = data;
       this._cfgOriginal = JSON.stringify(data);
+      this._cfgError = "";
     } catch (e) {
       console.error("akari cfg load:", e);
       this._cfgData = null;
+      this._cfgError = "Errore caricamento: dispositivo non raggiungibile";
     }
     this._cfgLoading = false;
     this._render();
@@ -170,19 +198,28 @@ class AkariManagerPanel extends HTMLElement {
 
   _html() {
     const dev = this._devices;
-    const devSel = dev.length > 1
-      ? `<select id="dev-sel">${dev.map(d =>
-          `<option value="${esc(d.entry_id)}" ${d.entry_id === this._entry ? "selected" : ""}>${esc(d.name || d.device_id)}</option>`
-        ).join("")}</select>`
-      : dev.length === 1
-        ? `<span class="dev-name">${esc(dev[0].name || dev[0].device_id)}</span>`
-        : `<span class="dev-name">Nessun dispositivo</span>`;
+    const sel = this._selectedDevice;
+    const online = this._isOnline;
+
+    let devInfo;
+    if (dev.length > 1) {
+      devInfo = `<select id="dev-sel">${dev.map(d =>
+        `<option value="${esc(d.entry_id)}" ${d.entry_id === this._entry ? "selected" : ""}>${esc(d.name || d.device_id)} ${d.online ? "" : "(offline)"}</option>`
+      ).join("")}</select>`;
+    } else if (dev.length === 1) {
+      const st = online
+        ? `<span class="chip" style="background:#4caf50">Online</span>`
+        : `<span class="chip" style="background:#f44336">Offline</span>`;
+      devInfo = `<span class="dev-name">${esc(sel.name || sel.device_id)} ${st}</span>`;
+    } else {
+      devInfo = `<span class="dev-name">Nessun dispositivo configurato</span>`;
+    }
 
     return `
       <div class="panel">
         <div class="header">
           <h1>Akari Manager</h1>
-          <div>${devSel}</div>
+          <div>${devInfo}</div>
         </div>
         <div class="tabs">
           <button class="tab ${this._tab === "diagnostica" ? "active" : ""}" data-tab="diagnostica">Diagnostica</button>
@@ -195,8 +232,11 @@ class AkariManagerPanel extends HTMLElement {
   }
 
   _htmlDiag() {
+    if (!this._entry) return `<div class="center">Nessun dispositivo configurato</div>`;
+    if (!this._isOnline) return `<div class="center"><p><strong>Dispositivo offline</strong></p><p>Il dispositivo non e' raggiungibile. Verifica che sia acceso e connesso alla rete.</p></div>`;
     if (this._loading) return `<div class="center">Caricamento...</div>`;
-    if (!this._diag || !this._status) return `<div class="center">Nessun dato disponibile</div>`;
+    if (this._error) return `<div class="center"><p class="msg-err-inline">${esc(this._error)}</p><button class="btn sec" id="btn-refresh">Riprova</button></div>`;
+    if (!this._diag || !this._status) return `<div class="center">Nessun dato disponibile<br><button class="btn sec" id="btn-refresh" style="margin-top:12px">Carica</button></div>`;
 
     const si = this._status.system_info || {};
     const st = this._status.status || {};
@@ -267,6 +307,8 @@ class AkariManagerPanel extends HTMLElement {
   }
 
   _htmlCfg() {
+    if (!this._entry) return `<div class="center">Nessun dispositivo configurato</div>`;
+
     const nav = CONFIG_GROUPS.map(g =>
       `<div class="nav-group">
         <div class="nav-label">${esc(g.label)}</div>
@@ -277,8 +319,12 @@ class AkariManagerPanel extends HTMLElement {
     ).join("");
 
     let body;
-    if (this._cfgLoading) {
+    if (!this._cfgSection) {
+      body = `<div class="center">Seleziona una sezione dalla lista</div>`;
+    } else if (this._cfgLoading) {
       body = `<div class="center">Caricamento...</div>`;
+    } else if (this._cfgError) {
+      body = `<div class="center"><p class="msg-err-inline">${esc(this._cfgError)}</p></div>`;
     } else if (this._cfgData != null) {
       const sLabel = CONFIG_GROUPS.flatMap(g => g.sections).find(s => s.key === this._cfgSection)?.label || this._cfgSection;
       const msgCls = this._cfgMsg.startsWith("Errore") ? "msg-err" : "msg-ok";
@@ -295,7 +341,7 @@ class AkariManagerPanel extends HTMLElement {
           <div class="form-body">${this._fieldsHtml(this._cfgData, [])}</div>
         </div>`;
     } else {
-      body = `<div class="center">Seleziona una sezione</div>`;
+      body = `<div class="center">Seleziona una sezione dalla lista</div>`;
     }
 
     return `<div class="cfg-layout"><nav class="cfg-nav">${nav}</nav><div class="cfg-content">${body}</div></div>`;
@@ -320,7 +366,6 @@ class AkariManagerPanel extends HTMLElement {
       if (typeof val === "number") {
         return `<div class="row"><label>${esc(key)}</label><input type="number" data-path="${esc(pid)}" value="${val}"/></div>`;
       }
-      // Selects for known fields
       if (key === "level" && path.length >= 1 && path[path.length - 1] === "logging") {
         const opts = ["DEBUG","INFO","WARNING","ERROR","CRITICAL"].map(l => `<option value="${l}" ${val === l ? "selected" : ""}>${l}</option>`).join("");
         return `<div class="row"><label>${esc(key)}</label><select data-path="${esc(pid)}">${opts}</select></div>`;
@@ -349,33 +394,34 @@ class AkariManagerPanel extends HTMLElement {
     const $ = (sel) => this.shadowRoot.querySelector(sel);
     const $$ = (sel) => this.shadowRoot.querySelectorAll(sel);
 
-    // Device selector
     const devSel = $("#dev-sel");
-    if (devSel) devSel.onchange = () => { this._entry = devSel.value; this._diag = null; this._status = null; this._cfgData = null; this._cfgSection = ""; this._refresh(); };
+    if (devSel) devSel.onchange = () => {
+      this._entry = devSel.value;
+      this._diag = null; this._status = null; this._cfgData = null; this._cfgSection = ""; this._error = ""; this._cfgError = "";
+      if (this._isOnline) this._refresh(); else this._render();
+    };
 
-    // Tabs
     $$(".tab").forEach(btn => btn.onclick = () => {
       this._tab = btn.dataset.tab;
-      if (this._tab === "configurazione" && !this._cfgSection) { this._cfgSection = "system"; this._loadCfg("system"); return; }
-      this._render();
+      if (this._tab === "configurazione" && !this._cfgSection) {
+        this._render(); // render first so nav is visible, don't auto-load
+      } else {
+        this._render();
+      }
     });
 
-    // Diagnostica buttons
     const btnR = $("#btn-refresh");
     if (btnR) btnR.onclick = () => this._refresh();
     const btnRst = $("#btn-restart");
     if (btnRst) btnRst.onclick = () => this._restart();
 
-    // Config nav
     $$(".nav-item").forEach(btn => btn.onclick = () => this._loadCfg(btn.dataset.section));
 
-    // Config save/cancel
     const btnSave = $("#btn-save");
     if (btnSave) btnSave.onclick = () => this._saveCfg();
     const btnCancel = $("#btn-cancel");
     if (btnCancel) btnCancel.onclick = () => this._loadCfg(this._cfgSection);
 
-    // Form inputs
     $$("input[data-path], select[data-path]").forEach(el => {
       const handler = () => {
         const path = el.dataset.path.split(".");
@@ -384,7 +430,6 @@ class AkariManagerPanel extends HTMLElement {
         else if (el.type === "number") val = el.value.includes(".") ? parseFloat(el.value) : parseInt(el.value, 10);
         else val = el.value;
         this._setVal(path, val);
-        // Update button states without full re-render
         const s = $("#btn-save"), c = $("#btn-cancel");
         if (s) s.disabled = !this._dirty;
         if (c) c.disabled = !this._dirty;
@@ -393,7 +438,6 @@ class AkariManagerPanel extends HTMLElement {
       if (el.tagName === "SELECT") el.addEventListener("change", handler);
     });
 
-    // Array remove
     $$("[data-rm]").forEach(btn => btn.onclick = () => {
       const path = btn.dataset.rm.split(".");
       const idx = parseInt(btn.dataset.idx, 10);
@@ -401,7 +445,6 @@ class AkariManagerPanel extends HTMLElement {
       this._render();
     });
 
-    // Array add
     $$("[data-add]").forEach(btn => btn.onclick = () => {
       const path = btn.dataset.add.split(".");
       this._addItem(path);
@@ -448,7 +491,7 @@ const STYLES = `
 .panel { max-width:1200px; margin:0 auto; padding:16px }
 .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px }
 .header h1 { margin:0; font-size:1.5em; font-weight:500 }
-.dev-name { opacity:.7 }
+.dev-name { display:flex; align-items:center; gap:8px; font-size:1em }
 select { padding:6px 12px; border-radius:4px; border:1px solid var(--divider-color,#e0e0e0); background:var(--card-background-color,#fff); color:var(--primary-text-color,#212121) }
 .tabs { display:flex; border-bottom:2px solid var(--divider-color,#e0e0e0); margin-bottom:16px }
 .tab { padding:10px 24px; border:none; background:none; cursor:pointer; font-size:1em; color:var(--secondary-text-color,#757575); border-bottom:2px solid transparent; margin-bottom:-2px }
@@ -464,6 +507,7 @@ th,td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--divider-
 th { font-weight:500; color:var(--secondary-text-color,#757575); font-size:.85em }
 .muted { color:var(--secondary-text-color,#757575); font-style:italic; font-size:.9em }
 .center { text-align:center; padding:40px; color:var(--secondary-text-color,#757575) }
+.msg-err-inline { color:#c62828; font-weight:500 }
 .btn { padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-size:.9em }
 .btn:disabled { opacity:.5; cursor:not-allowed }
 .btn.pri { background:var(--primary-color,#03a9f4); color:#fff }
