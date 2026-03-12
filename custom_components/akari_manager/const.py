@@ -17,6 +17,7 @@ API_CONFIG_SECTION = "/api/config/{section}"
 API_RELOAD = "/api/config/reload"
 API_RESTART = "/api/system/restart"
 API_DEVICES = "/api/devices"
+API_DIAGNOSTICS = "/api/diagnostics"
 
 # MQTT
 MQTT_DISCOVERY_TOPIC = "home/+/info"
@@ -26,7 +27,11 @@ MQTT_DISCOVERY_TIMEOUT = 5  # seconds
 UPDATE_INTERVAL_SECONDS = 30
 
 # Config sections
-CONFIG_SECTIONS = ["mqtt", "devices", "covers", "sensors", "modbus", "system"]
+CONFIG_SECTIONS = [
+    "system", "mqtt",
+    "mcp", "pca", "gpio", "modbus", "onewire",
+    "switches", "lights", "covers", "sensors", "binary_sensors",
+]
 
 # Service names
 SERVICE_GET_CONFIG_SECTION = "get_config_section"

@@ -11,6 +11,7 @@ from .const import (
     API_CONFIG,
     API_CONFIG_SECTION,
     API_DEVICES,
+    API_DIAGNOSTICS,
     API_RELOAD,
     API_RESTART,
     API_STATUS,
@@ -112,6 +113,10 @@ class AkariApiClient:
     async def restart(self) -> dict:
         """POST /api/system/restart — restart the Akari service."""
         return await self._request("POST", API_RESTART)
+
+    async def get_diagnostics(self) -> dict:
+        """GET /api/diagnostics — detailed hardware diagnostics."""
+        return await self._request("GET", API_DIAGNOSTICS)
 
     async def get_devices(self) -> list:
         """GET /api/devices — list of configured devices and their states."""

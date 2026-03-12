@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Any
 
 import aiohttp
@@ -28,6 +29,40 @@ from .const import (
 from .coordinator import AkariCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Set up the Akari Manager component (called once before entries)."""
+    from .websocket_api import register_websocket_commands
+
+    register_websocket_commands(hass)
+
+    # Register static path for frontend panel
+    panel_path = os.path.join(
+        os.path.dirname(__file__), "frontend", "panel.js"
+    )
+    hass.http.register_static_path(
+        "/akari_manager/panel.js",
+        panel_path,
+        cache_headers=False,
+    )
+
+    # Register sidebar panel
+    hass.components.frontend.async_register_built_in_panel(
+        component_name="custom",
+        sidebar_title="Akari",
+        sidebar_icon="mdi:chip",
+        frontend_url_path="akari-manager",
+        config={
+            "_panel_custom": {
+                "name": "akari-manager-panel",
+                "url": "/akari_manager/panel.js",
+                "embed_iframe": False,
+            }
+        },
+        require_admin=True,
+    )
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

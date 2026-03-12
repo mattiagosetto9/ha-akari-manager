@@ -1,7 +1,6 @@
 """DataUpdateCoordinator for Akari Manager."""
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import timedelta
 from typing import Any
@@ -35,18 +34,12 @@ class AkariCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.device_id = device_id
 
     async def _async_update_data(self) -> dict[str, Any]:
-        """Fetch status and system info from the Akari API."""
+        """Fetch system info from the Akari API."""
         try:
-            status, sys_info = await asyncio.gather(
-                self.client.get_status(),
-                self.client.get_system_info(),
-            )
+            sys_info = await self.client.get_system_info()
         except AkariAuthError as err:
             raise UpdateFailed(f"Authentication error: {err}") from err
         except AkariConnectionError as err:
             raise UpdateFailed(f"Cannot connect to Akari device: {err}") from err
 
-        return {
-            "status": status,
-            "system_info": sys_info,
-        }
+        return {"system_info": sys_info}

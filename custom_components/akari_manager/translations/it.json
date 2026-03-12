@@ -59,9 +59,6 @@
   },
   "entity": {
     "sensor": {
-      "cpu_temperature": {
-        "name": "Temperatura CPU"
-      },
       "ram_used": {
         "name": "RAM Utilizzata"
       },
@@ -73,21 +70,6 @@
       }
     },
     "binary_sensor": {
-      "module_mqtt": {
-        "name": "Modulo MQTT"
-      },
-      "module_mcp": {
-        "name": "Adattatore MCP"
-      },
-      "module_gpio": {
-        "name": "Adattatore GPIO"
-      },
-      "module_modbus": {
-        "name": "Adattatore Modbus"
-      },
-      "module_ds18b20": {
-        "name": "Adattatore DS18B20"
-      },
       "overlay_active": {
         "name": "Filesystem Overlay"
       }

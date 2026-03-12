@@ -30,41 +30,6 @@ class AkariBinarySensorEntityDescription(BinarySensorEntityDescription):
 
 BINARY_SENSOR_DESCRIPTIONS: tuple[AkariBinarySensorEntityDescription, ...] = (
     AkariBinarySensorEntityDescription(
-        key="module_mqtt",
-        translation_key="module_mqtt",
-        device_class=BinarySensorDeviceClass.CONNECTIVITY,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        data_path=("status", "modules", "mqtt"),
-    ),
-    AkariBinarySensorEntityDescription(
-        key="module_mcp",
-        translation_key="module_mcp",
-        device_class=BinarySensorDeviceClass.CONNECTIVITY,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        data_path=("status", "modules", "mcp"),
-    ),
-    AkariBinarySensorEntityDescription(
-        key="module_gpio",
-        translation_key="module_gpio",
-        device_class=BinarySensorDeviceClass.CONNECTIVITY,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        data_path=("status", "modules", "gpio"),
-    ),
-    AkariBinarySensorEntityDescription(
-        key="module_modbus",
-        translation_key="module_modbus",
-        device_class=BinarySensorDeviceClass.CONNECTIVITY,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        data_path=("status", "modules", "modbus"),
-    ),
-    AkariBinarySensorEntityDescription(
-        key="module_ds18b20",
-        translation_key="module_ds18b20",
-        device_class=BinarySensorDeviceClass.CONNECTIVITY,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        data_path=("status", "modules", "ds18b20"),
-    ),
-    AkariBinarySensorEntityDescription(
         key="overlay_active",
         translation_key="overlay_active",
         device_class=None,
