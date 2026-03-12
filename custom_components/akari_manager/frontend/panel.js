@@ -202,15 +202,10 @@ class AkariManagerPanel extends HTMLElement {
     const online = this._isOnline;
 
     let devInfo;
-    if (dev.length > 1) {
+    if (dev.length >= 1) {
       devInfo = `<select id="dev-sel">${dev.map(d =>
-        `<option value="${esc(d.entry_id)}" ${d.entry_id === this._entry ? "selected" : ""}>${esc(d.name || d.device_id)} ${d.online ? "" : "(offline)"}</option>`
+        `<option value="${esc(d.entry_id)}" ${d.entry_id === this._entry ? "selected" : ""}>${esc(d.name || d.device_id)}</option>`
       ).join("")}</select>`;
-    } else if (dev.length === 1) {
-      const st = online
-        ? `<span class="chip" style="background:#4caf50">Online</span>`
-        : `<span class="chip" style="background:#f44336">Offline</span>`;
-      devInfo = `<span class="dev-name">${esc(sel.name || sel.device_id)} ${st}</span>`;
     } else {
       devInfo = `<span class="dev-name">Nessun dispositivo configurato</span>`;
     }
@@ -223,7 +218,7 @@ class AkariManagerPanel extends HTMLElement {
         </div>
         <div class="tabs">
           <button class="tab ${this._tab === "diagnostica" ? "active" : ""}" data-tab="diagnostica">Diagnostica</button>
-          <button class="tab ${this._tab === "configurazione" ? "active" : ""}" data-tab="configurazione">Configurazione</button>
+          <button class="tab ${this._tab === "configurazione" ? "active" : ""}" data-tab="configurazione" ${!online ? "disabled" : ""}>Configurazione</button>
         </div>
         <div class="content">
           ${this._tab === "diagnostica" ? this._htmlDiag() : this._htmlCfg()}
@@ -233,7 +228,7 @@ class AkariManagerPanel extends HTMLElement {
 
   _htmlDiag() {
     if (!this._entry) return `<div class="center">Nessun dispositivo configurato</div>`;
-    if (!this._isOnline) return `<div class="center"><p><strong>Dispositivo offline</strong></p><p>Il dispositivo non e' raggiungibile. Verifica che sia acceso e connesso alla rete.</p></div>`;
+    if (!this._isOnline) return `<div class="center"><span class="chip" style="background:#f44336">Offline</span><p style="margin-top:12px"><strong>Dispositivo offline</strong></p><p>Il dispositivo non e' raggiungibile. Verifica che sia acceso e connesso alla rete.</p></div>`;
     if (this._loading) return `<div class="center">Caricamento...</div>`;
     if (this._error) return `<div class="center"><p class="msg-err-inline">${esc(this._error)}</p><button class="btn sec" id="btn-refresh">Riprova</button></div>`;
     if (!this._diag || !this._status) return `<div class="center">Nessun dato disponibile<br><button class="btn sec" id="btn-refresh" style="margin-top:12px">Carica</button></div>`;
@@ -263,6 +258,7 @@ class AkariManagerPanel extends HTMLElement {
         <div class="card">
           <h3>Sistema</h3>
           <table>
+            <tr><td>Stato</td><td><span class="chip" style="background:#4caf50">Online</span></td></tr>
             <tr><td>Nome</td><td>${esc(st.name || st.id)}</td></tr>
             <tr><td>Versione</td><td>${esc(si.version)}</td></tr>
             <tr><td>CPU</td><td>${si.cpu_temp != null ? si.cpu_temp + " &deg;C" : "N/D"}</td></tr>
@@ -398,6 +394,7 @@ class AkariManagerPanel extends HTMLElement {
     if (devSel) devSel.onchange = () => {
       this._entry = devSel.value;
       this._diag = null; this._status = null; this._cfgData = null; this._cfgSection = ""; this._error = ""; this._cfgError = "";
+      if (!this._isOnline) this._tab = "diagnostica";
       if (this._isOnline) this._refresh(); else this._render();
     };
 
@@ -496,7 +493,8 @@ select { padding:6px 12px; border-radius:4px; border:1px solid var(--divider-col
 .tabs { display:flex; border-bottom:2px solid var(--divider-color,#e0e0e0); margin-bottom:16px }
 .tab { padding:10px 24px; border:none; background:none; cursor:pointer; font-size:1em; color:var(--secondary-text-color,#757575); border-bottom:2px solid transparent; margin-bottom:-2px }
 .tab.active { color:var(--primary-color,#03a9f4); border-bottom-color:var(--primary-color,#03a9f4); font-weight:500 }
-.tab:hover { color:var(--primary-text-color,#212121) }
+.tab:hover:not(:disabled) { color:var(--primary-text-color,#212121) }
+.tab:disabled { opacity:.4; cursor:not-allowed }
 .toolbar { display:flex; gap:8px; margin-bottom:16px }
 .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px }
 .card { background:var(--card-background-color,#fff); border-radius:8px; padding:16px; box-shadow:var(--ha-card-box-shadow,0 2px 2px rgba(0,0,0,.1)) }

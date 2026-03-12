@@ -1,7 +1,7 @@
 {
   "domain": "akari_manager",
   "name": "Akari Manager",
-  "version": "2.2.8",
+  "version": "2.2.9",
   "dependencies": ["mqtt", "http", "frontend", "panel_custom"],
   "requirements": [],
   "codeowners": [],
