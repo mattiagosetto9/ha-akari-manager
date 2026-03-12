@@ -33,6 +33,8 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the Akari Manager component (called once before entries)."""
+    _LOGGER.info("Akari Manager async_setup started")
+
     from .websocket_api import register_websocket_commands
 
     register_websocket_commands(hass)
@@ -40,23 +42,31 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     # Register static path for frontend panel
     from homeassistant.components.http import StaticPathConfig
 
-    panel_dir = os.path.join(os.path.dirname(__file__), "frontend")
+    panel_file = os.path.join(os.path.dirname(__file__), "frontend", "panel.js")
+    _LOGGER.info("Registering static path, file exists: %s", os.path.exists(panel_file))
     await hass.http.async_register_static_paths([
-        StaticPathConfig(f"/{DOMAIN}/frontend", panel_dir, cache_headers=False),
+        StaticPathConfig(
+            f"/akari_manager_panel.js", panel_file, cache_headers=False,
+        ),
     ])
 
     # Register sidebar panel
     from homeassistant.components import panel_custom
 
-    await panel_custom.async_register_panel(
-        hass,
-        webcomponent_name="akari-manager-panel",
-        frontend_url_path="akari-manager",
-        sidebar_title="Akari",
-        sidebar_icon="mdi:chip",
-        module_url=f"/{DOMAIN}/frontend/panel.js",
-        require_admin=True,
-    )
+    try:
+        await panel_custom.async_register_panel(
+            hass,
+            webcomponent_name="akari-manager-panel",
+            frontend_url_path="akari-manager",
+            sidebar_title="Akari",
+            sidebar_icon="mdi:chip",
+            module_url="/akari_manager_panel.js",
+            require_admin=True,
+        )
+        _LOGGER.info("Akari Manager panel registered successfully")
+    except Exception:
+        _LOGGER.exception("Failed to register Akari Manager panel")
+
     return True
 
 
