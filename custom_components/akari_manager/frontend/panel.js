@@ -107,17 +107,20 @@ class AkariManagerPanel extends HTMLElement {
 
   async _refresh() {
     if (!this._entry || !this._isOnline) return;
+    const forEntry = this._entry;
     this._loading = true;
     this._error = "";
     this._render();
     try {
       const [diag, st] = await Promise.all([
-        this._ws("akari_manager/diagnostics", { entry_id: this._entry }),
-        this._ws("akari_manager/status", { entry_id: this._entry }),
+        this._ws("akari_manager/diagnostics", { entry_id: forEntry }),
+        this._ws("akari_manager/status", { entry_id: forEntry }),
       ]);
+      if (this._entry !== forEntry) return; // device changed while loading
       this._diag = diag;
       this._status = st;
     } catch (e) {
+      if (this._entry !== forEntry) return;
       console.error("akari refresh:", e);
       this._error = "Impossibile contattare il dispositivo";
       this._diag = null;
@@ -129,6 +132,7 @@ class AkariManagerPanel extends HTMLElement {
 
   async _loadCfg(section) {
     if (!this._entry) return;
+    const forEntry = this._entry;
     this._cfgSection = section;
     this._cfgError = "";
 
@@ -143,11 +147,13 @@ class AkariManagerPanel extends HTMLElement {
     this._cfgMsg = "";
     this._render();
     try {
-      const data = await this._ws("akari_manager/config_get", { entry_id: this._entry, section });
+      const data = await this._ws("akari_manager/config_get", { entry_id: forEntry, section });
+      if (this._entry !== forEntry) return;
       this._cfgData = data;
       this._cfgOriginal = JSON.stringify(data);
       this._cfgError = "";
     } catch (e) {
+      if (this._entry !== forEntry) return;
       console.error("akari cfg load:", e);
       this._cfgData = null;
       this._cfgError = "Errore caricamento: dispositivo non raggiungibile";
@@ -158,17 +164,21 @@ class AkariManagerPanel extends HTMLElement {
 
   async _saveCfg() {
     if (!this._entry || !this._cfgSection || !this._cfgData) return;
+    const forEntry = this._entry;
+    const forSection = this._cfgSection;
     this._cfgMsg = "";
     this._render();
     try {
       const r = await this._ws("akari_manager/config_update", {
-        entry_id: this._entry, section: this._cfgSection, data: this._cfgData,
+        entry_id: forEntry, section: forSection, data: this._cfgData,
       });
+      if (this._entry !== forEntry || this._cfgSection !== forSection) return;
       this._cfgOriginal = JSON.stringify(this._cfgData);
       this._cfgMsg = r.restart_required
         ? "Salvato. Riavvio necessario per applicare le modifiche."
         : "Salvato.";
     } catch (e) {
+      if (this._entry !== forEntry || this._cfgSection !== forSection) return;
       this._cfgMsg = "Errore: " + (e.message || e);
     }
     this._render();
