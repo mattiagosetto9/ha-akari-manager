@@ -38,14 +38,14 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     register_websocket_commands(hass)
 
     # Register static path for frontend panel
+    from homeassistant.components.http import StaticPathConfig
+
     panel_path = os.path.join(
         os.path.dirname(__file__), "frontend", "panel.js"
     )
-    hass.http.register_static_path(
-        "/akari_manager/panel.js",
-        panel_path,
-        cache_headers=False,
-    )
+    await hass.http.async_register_static_paths([
+        StaticPathConfig("/akari_manager/panel.js", panel_path, cache_headers=False),
+    ])
 
     # Register sidebar panel
     hass.components.frontend.async_register_built_in_panel(
