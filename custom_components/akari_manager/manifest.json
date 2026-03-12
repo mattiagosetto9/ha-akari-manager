@@ -1,8 +1,8 @@
 {
   "domain": "akari_manager",
   "name": "Akari Manager",
-  "version": "2.2.2",
-  "dependencies": ["mqtt", "frontend"],
+  "version": "2.2.3",
+  "dependencies": ["mqtt", "http", "frontend", "panel_custom"],
   "requirements": [],
   "codeowners": [],
   "iot_class": "local_polling",

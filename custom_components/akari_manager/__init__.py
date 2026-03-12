@@ -40,29 +40,21 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     # Register static path for frontend panel
     from homeassistant.components.http import StaticPathConfig
 
-    panel_path = os.path.join(
-        os.path.dirname(__file__), "frontend", "panel.js"
-    )
+    panel_dir = os.path.join(os.path.dirname(__file__), "frontend")
     await hass.http.async_register_static_paths([
-        StaticPathConfig("/akari_manager/panel.js", panel_path, cache_headers=False),
+        StaticPathConfig(f"/{DOMAIN}/frontend", panel_dir, cache_headers=False),
     ])
 
     # Register sidebar panel
-    from homeassistant.components.frontend import async_register_built_in_panel
+    from homeassistant.components import panel_custom
 
-    async_register_built_in_panel(
+    await panel_custom.async_register_panel(
         hass,
-        component_name="custom",
+        webcomponent_name="akari-manager-panel",
+        frontend_url_path="akari-manager",
         sidebar_title="Akari",
         sidebar_icon="mdi:chip",
-        frontend_url_path="akari-manager",
-        config={
-            "_panel_custom": {
-                "name": "akari-manager-panel",
-                "url": "/akari_manager/panel.js",
-                "embed_iframe": False,
-            }
-        },
+        module_url=f"/{DOMAIN}/frontend/panel.js",
         require_admin=True,
     )
     return True
@@ -93,11 +85,43 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    # Cleanup old entities no longer provided (module status, cpu_temp, modbus_adapter_status)
+    _cleanup_stale_entities(hass, entry, device_id)
+
     # Register HA services (only once, on first entry setup)
     if not hass.services.has_service(DOMAIN, SERVICE_GET_CONFIG_SECTION):
         _register_services(hass)
 
     return True
+
+
+def _cleanup_stale_entities(
+    hass: HomeAssistant, entry: ConfigEntry, device_id: str
+) -> None:
+    """Remove entities from old versions that are no longer created."""
+    from homeassistant.helpers import entity_registry as er
+
+    registry = er.async_get(hass)
+
+    # Unique IDs of entities removed in v2.2+ (module status moved to firmware MQTT discovery)
+    stale_unique_ids = {
+        f"{device_id}_module_mqtt",
+        f"{device_id}_module_mcp",
+        f"{device_id}_module_gpio",
+        f"{device_id}_module_modbus",
+        f"{device_id}_module_ds18b20",
+        f"{device_id}_modbus_adapter_status",
+        f"{device_id}_cpu_temp",
+    }
+
+    for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if entity_entry.unique_id in stale_unique_ids:
+            _LOGGER.info(
+                "Removing stale entity %s (%s)",
+                entity_entry.entity_id,
+                entity_entry.unique_id,
+            )
+            registry.async_remove(entity_entry.entity_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
