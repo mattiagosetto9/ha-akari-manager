@@ -70,6 +70,20 @@ class AkariManagerPanel extends HTMLElement {
     this._cfgLoading = false;
     this._cfgMsg = "";
     this._cfgError = "";
+    this._pollTimer = null;
+    this._onVisChange = () => {
+      if (document.hidden) this._stopPoll();
+      else this._startPoll();
+    };
+  }
+
+  connectedCallback() {
+    document.addEventListener("visibilitychange", this._onVisChange);
+  }
+
+  disconnectedCallback() {
+    this._stopPoll();
+    document.removeEventListener("visibilitychange", this._onVisChange);
   }
 
   set hass(h) {
@@ -103,6 +117,7 @@ class AkariManagerPanel extends HTMLElement {
       }
     } catch (e) { console.error("akari init:", e); }
     this._render();
+    this._startPoll();
   }
 
   async _refresh() {
@@ -195,6 +210,22 @@ class AkariManagerPanel extends HTMLElement {
 
   get _dirty() {
     return this._cfgData && JSON.stringify(this._cfgData) !== this._cfgOriginal;
+  }
+
+  // ─── Auto-polling ───
+
+  _startPoll() {
+    this._stopPoll();
+    if (this._tab === "diagnostica" && this._isOnline && !document.hidden) {
+      this._pollTimer = setInterval(() => this._refresh(), 10000);
+    }
+  }
+
+  _stopPoll() {
+    if (this._pollTimer) {
+      clearInterval(this._pollTimer);
+      this._pollTimer = null;
+    }
   }
 
   // ─── Render ───
@@ -405,16 +436,13 @@ class AkariManagerPanel extends HTMLElement {
       this._entry = devSel.value;
       this._diag = null; this._status = null; this._cfgData = null; this._cfgSection = ""; this._error = ""; this._cfgError = "";
       if (!this._isOnline) this._tab = "diagnostica";
-      if (this._isOnline) this._refresh(); else this._render();
+      if (this._isOnline) { this._refresh(); this._startPoll(); } else { this._stopPoll(); this._render(); }
     };
 
     $$(".tab").forEach(btn => btn.onclick = () => {
       this._tab = btn.dataset.tab;
-      if (this._tab === "configurazione" && !this._cfgSection) {
-        this._render(); // render first so nav is visible, don't auto-load
-      } else {
-        this._render();
-      }
+      this._startPoll();
+      this._render();
     });
 
     const btnR = $("#btn-refresh");
