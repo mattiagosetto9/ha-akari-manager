@@ -51,6 +51,7 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
     from homeassistant.components.http import StaticPathConfig
 
     panel_file = os.path.join(os.path.dirname(__file__), "frontend", "panel.js")
+    panel_hash = str(int(os.path.getmtime(panel_file)))
     await hass.http.async_register_static_paths([
         StaticPathConfig("/akari_manager_panel.js", panel_file, cache_headers=False),
     ])
@@ -64,7 +65,7 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
             frontend_url_path="akari-manager",
             sidebar_title="Akari Manager",
             sidebar_icon="mdi:chip",
-            module_url="/akari_manager_panel.js",
+            module_url=f"/akari_manager_panel.js?v={panel_hash}",
             require_admin=True,
         )
         _LOGGER.warning("Akari Manager: panel registered OK")
