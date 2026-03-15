@@ -5,14 +5,14 @@ Custom component that integrates Akari firmware nodes into Home Assistant.
 ## Features
 
 - **MQTT Discovery**: automatically finds Akari devices from retained `home/+/info` messages
-- **Diagnostic entities**: CPU temperature, RAM used/total, uptime
-- **Module status**: binary sensors for MQTT, MCP, GPIO, Modbus, DS18B20 adapters + overlay filesystem
+- **Diagnostic entities**: RAM used/total, uptime, overlay filesystem status
 - **Action buttons**: Restart Service, Reload Config
+- **Sidebar panel**: real-time diagnostics (MCP, PCA, GPIO, Modbus, DS18B20, INA3221) + config editor
 - **HA Services**: read/write config sections via `akari_manager.*` services
 
 ## Architectural principle
 
-This integration does **not** create entities for lights, switches, covers, or sensors — those come from the MQTT Discovery published by the Akari firmware itself. Akari Manager only manages the diagnostic/administrative layer.
+This integration does **not** create entities for lights, switches, covers, or sensors — those come from the MQTT Discovery published by the Akari firmware itself. Similarly, CPU temperature and hardware module status (MQTT, MCP, GPIO, Modbus, DS18B20) are published by the firmware via MQTT Discovery. Akari Manager only manages the diagnostic/administrative layer.
 
 ## Installation (HACS)
 
@@ -36,6 +36,23 @@ will find it automatically within ~5 seconds and pre-fill the host and port.
 
 Enter the device IP, port (default 8080), and optional API key.
 
+## Sidebar panel
+
+The integration adds an **Akari Manager** panel in the HA sidebar with two tabs:
+
+### Diagnostica
+
+Hardware status overview with manual refresh button:
+- **Sistema**: version, CPU temp, RAM, uptime, overlay status
+- **MCP23017 / PCA9555**: per-chip online status, I2C addresses
+- **GPIO**: chip path and availability
+- **Modbus**: adapter status, per-device connection state
+- **Sensori**: DS18B20 count, CPU temp, INA3221 channels
+
+### Configurazione
+
+YAML config editor organized in 12 sections (system, mqtt, mcp, pca, gpio, modbus, onewire, switches, lights, covers, sensors, binary_sensors). Edit values and save directly to the device.
+
 ## Services
 
 ### `akari_manager.get_config_section`
@@ -45,7 +62,7 @@ Reads a config section from the device and shows it as a persistent notification
 | Field | Type | Description |
 |-------|------|-------------|
 | `entry_id` | string | Config entry ID |
-| `section` | select | `mqtt` / `devices` / `covers` / `sensors` / `modbus` / `system` |
+| `section` | select | Config section name |
 
 ### `akari_manager.update_config_section`
 
@@ -70,8 +87,8 @@ Fetches the list of devices and their states from the Akari device.
 Each Akari device becomes one HA device:
 
 ```
-Device: "Akari Zona Giorno"
-  Sensors:       CPU Temp · RAM Used · RAM Total · Uptime
-  Binary sensors: MQTT · MCP · GPIO · Modbus · DS18B20 · Overlay FS
-  Buttons:       Restart Service · Reload Config
+Device: "Akari Zona Notte"
+  Sensors:        RAM Used · RAM Total · Uptime
+  Binary sensors: Overlay FS
+  Buttons:        Restart Service · Reload Config
 ```
