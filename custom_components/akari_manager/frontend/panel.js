@@ -8,9 +8,12 @@ const CONFIG_GROUPS = [
   { label: "Adattatori", sections: [
     { key: "mcp", label: "MCP23017" },
     { key: "pca", label: "PCA9555" },
+    { key: "pcf", label: "PCF8574" },
     { key: "gpio", label: "GPIO" },
     { key: "modbus", label: "Modbus" },
     { key: "onewire", label: "1-Wire" },
+    { key: "display", label: "OLED SSD1306" },
+    { key: "inverter", label: "Inverter" },
   ]},
   { label: "Entita'", sections: [
     { key: "switches", label: "Switch" },
@@ -255,6 +258,10 @@ class AkariManagerPanel extends HTMLElement {
       `<tr><td>${esc(c.name)}</td><td>${esc(c.address)}</td><td>${c.active_low ? "Si'" : "No"}</td><td>${badge(c.online)}</td></tr>`
     ).join("");
 
+    const pcfRows = (d.pcf?.chips || []).map(c =>
+      `<tr><td>${esc(c.name)}</td><td>${esc(c.address)}</td><td>${c.active_low ? "Si'" : "No"}</td><td>${badge(c.online)}</td></tr>`
+    ).join("");
+
     const modbusDevs = (d.modbus?.devices || []).map(dev =>
       `<tr><td>${esc(dev.name)}</td><td>${badge(dev.connected)}</td></tr>`
     ).join("");
@@ -284,6 +291,10 @@ class AkariManagerPanel extends HTMLElement {
         <div class="card">
           <h3>PCA9555 <span class="chip" style="background:${statusColor(d.pca?.status)}">${statusLabel(d.pca?.status)}</span></h3>
           ${pcaRows ? `<table><thead><tr><th>Nome</th><th>Indirizzo</th><th>Active Low</th><th>Stato</th></tr></thead><tbody>${pcaRows}</tbody></table>` : `<p class="muted">Nessun chip configurato</p>`}
+        </div>
+        <div class="card">
+          <h3>PCF8574 <span class="chip" style="background:${statusColor(d.pcf?.status)}">${statusLabel(d.pcf?.status)}</span></h3>
+          ${pcfRows ? `<table><thead><tr><th>Nome</th><th>Indirizzo</th><th>Active Low</th><th>Stato</th></tr></thead><tbody>${pcfRows}</tbody></table>` : `<p class="muted">Nessun chip configurato</p>`}
         </div>
         <div class="card">
           <h3>GPIO</h3>
@@ -536,7 +547,7 @@ th { font-weight:500; color:var(--secondary-text-color,#757575); font-size:.85em
 .msg-err { padding:8px 12px; border-radius:4px; margin-bottom:12px; font-size:.9em; background:#ffebee; color:#c62828 }
 .form-body { max-height:600px; overflow-y:auto }
 .row { display:flex; align-items:center; gap:12px; margin-bottom:10px }
-.row label { min-width:140px; font-size:.9em; font-weight:500 }
+.row > label:not(.toggle) { min-width:140px; font-size:.9em; font-weight:500 }
 .row input[type=text],.row input[type=number],.row select { flex:1; padding:6px 10px; border:1px solid var(--divider-color,#e0e0e0); border-radius:4px; background:var(--primary-background-color,#fafafa); color:var(--primary-text-color,#212121); font-size:.9em }
 .row input[readonly] { opacity:.6; cursor:not-allowed }
 .toggle { position:relative; display:inline-block; width:44px; height:24px; min-width:44px }

@@ -14,17 +14,26 @@ get_config_section:
         text:
     section:
       name: Section
-      description: "Configuration section to read (mqtt, devices, covers, sensors, modbus, system)."
+      description: "Configuration section to read."
       required: true
       selector:
         select:
           options:
+            - system
             - mqtt
-            - devices
+            - mcp
+            - pca
+            - pcf
+            - gpio
+            - modbus
+            - onewire
+            - display
+            - inverter
+            - switches
+            - lights
             - covers
             - sensors
-            - modbus
-            - system
+            - binary_sensors
 
 update_config_section:
   name: Update Config Section
@@ -40,17 +49,26 @@ update_config_section:
         text:
     section:
       name: Section
-      description: "Configuration section to update (mqtt, devices, covers, sensors, modbus, system)."
+      description: "Configuration section to update."
       required: true
       selector:
         select:
           options:
+            - system
             - mqtt
-            - devices
+            - mcp
+            - pca
+            - pcf
+            - gpio
+            - modbus
+            - onewire
+            - display
+            - inverter
+            - switches
+            - lights
             - covers
             - sensors
-            - modbus
-            - system
+            - binary_sensors
     data:
       name: Data
       description: >

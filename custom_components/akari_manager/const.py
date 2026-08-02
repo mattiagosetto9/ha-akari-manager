@@ -26,10 +26,10 @@ MQTT_DISCOVERY_TIMEOUT = 5  # seconds
 # Update interval
 UPDATE_INTERVAL_SECONDS = 30
 
-# Config sections
+# Config sections — devono matchare ALL_FILES del firmware (config_service.py)
 CONFIG_SECTIONS = [
     "system", "mqtt",
-    "mcp", "pca", "gpio", "modbus", "onewire",
+    "mcp", "pca", "pcf", "gpio", "modbus", "onewire", "display", "inverter",
     "switches", "lights", "covers", "sensors", "binary_sensors",
 ]
 

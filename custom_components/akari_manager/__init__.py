@@ -42,7 +42,7 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
         return
     hass.data[f"{DOMAIN}_panel_registered"] = True
 
-    _LOGGER.warning("Akari Manager: registering panel and WS commands")
+    _LOGGER.debug("Akari Manager: registering panel and WS commands")
 
     from .websocket_api import register_websocket_commands
 
@@ -68,7 +68,7 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
             module_url=f"/akari_manager_panel.js?v={panel_hash}",
             require_admin=True,
         )
-        _LOGGER.warning("Akari Manager: panel registered OK")
+        _LOGGER.debug("Akari Manager: panel registered OK")
     except Exception:
         _LOGGER.exception("Akari Manager: panel registration failed")
 
