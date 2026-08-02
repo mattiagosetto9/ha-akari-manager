@@ -7,12 +7,12 @@ Custom component that integrates Akari firmware nodes into Home Assistant.
 - **MQTT Discovery**: automatically finds Akari devices from retained `home/+/info` messages
 - **Diagnostic entities**: RAM used/total, uptime, overlay filesystem status
 - **Action buttons**: Restart Service, Reload Config
-- **Sidebar panel**: real-time diagnostics (MCP, PCA, GPIO, Modbus, DS18B20, INA3221) + config editor
+- **Sidebar panel**: real-time diagnostics (MCP, PCA, PCF, GPIO, Modbus, DS18B20, INA3221) + schema-aware config editor
 - **HA Services**: read/write config sections via `akari_manager.*` services
 
 ## Architectural principle
 
-This integration does **not** create entities for lights, switches, covers, or sensors — those come from the MQTT Discovery published by the Akari firmware itself. Similarly, CPU temperature and hardware module status (MQTT, MCP, GPIO, Modbus, DS18B20) are published by the firmware via MQTT Discovery. Akari Manager only manages the diagnostic/administrative layer.
+This integration does **not** create entities for lights, switches, covers, or sensors — those come from the MQTT Discovery published by the Akari firmware itself. Similarly, CPU temperature and hardware module status (MQTT, MCP, PCA, PCF, GPIO, Modbus, DS18B20) are published by the firmware via MQTT Discovery. Akari Manager only manages the diagnostic/administrative layer.
 
 ## Installation (HACS)
 
@@ -44,14 +44,20 @@ The integration adds an **Akari Manager** panel in the HA sidebar with two tabs:
 
 Hardware status overview with manual refresh button:
 - **Sistema**: version, CPU temp, RAM, uptime, overlay status
-- **MCP23017 / PCA9555**: per-chip online status, I2C addresses
+- **MCP23017 / PCA9555 / PCF8574**: per-chip online status, I2C addresses
 - **GPIO**: chip path and availability
 - **Modbus**: adapter status, per-device connection state
 - **Sensori**: DS18B20 count, CPU temp, INA3221 channels
 
 ### Configurazione
 
-YAML config editor organized in 12 sections (system, mqtt, mcp, pca, gpio, modbus, onewire, switches, lights, covers, sensors, binary_sensors). Edit values and save directly to the device.
+Schema-aware YAML editor over the **15** config sections (system, mqtt, mcp, pca, pcf, gpio, modbus, onewire, display, inverter, switches, lights, covers, sensors, binary_sensors). Edit and save directly to the device. Features:
+- **Entity name** shown at the top of each entity — for switches/lights/binary_sensors the name is stored by the firmware as a YAML **comment** (`# Name`), not a data key.
+- **Adapter dropdowns** populated from the device's resolved adapters (`GET /api/adapters`).
+- **Add/remove optional fields** (e.g. `feedback`, `static` on switches/lights; `input` on binary_sensors).
+- Non-destructive save on the firmware side (no comment loss, no key reordering).
+
+> Requires firmware with name-as-comment support and `/api/adapters`; degrades gracefully on older firmware (adapters shown as free text, no name field).
 
 ## Services
 
