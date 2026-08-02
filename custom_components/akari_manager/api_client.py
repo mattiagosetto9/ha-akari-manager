@@ -8,6 +8,7 @@ from typing import Any
 import aiohttp
 
 from .const import (
+    API_ADAPTERS,
     API_CONFIG_SECTION,
     API_DEVICES,
     API_DIAGNOSTICS,
@@ -90,6 +91,10 @@ class AkariApiClient:
     async def get_system_info(self) -> dict:
         """GET /api/system/info — CPU temp, RAM, uptime, version."""
         return await self._request("GET", API_SYSTEM_INFO)
+
+    async def get_adapters(self) -> dict:
+        """GET /api/adapters — lista adapter risolti per i dropdown dell'editor."""
+        return await self._request("GET", API_ADAPTERS)
 
     async def get_config_section(self, section: str) -> dict:
         """GET /api/config/{section} — single config section."""

@@ -21,7 +21,7 @@ custom_components/akari_manager/
   services.yaml        — definizione servizi HA
 ```
 
-## Versione corrente: 2.4.0
+## Versione corrente: 2.5.0
 
 ## Architettura
 
@@ -29,6 +29,7 @@ custom_components/akari_manager/
 - **Entita'**: `ram_used`, `ram_total`, `uptime` (sensor), `overlay_active` (binary_sensor), `restart_service`, `reload_config` (button) — tutti diagnostic
 - **CPU temp e module status**: pubblicati dal firmware via MQTT discovery — akari-manager NON li crea
 - **Pannello**: vanilla web component, NO LitElement/build tools, NO auto-refresh
+- **Config editor (v2.5)**: engine generico potenziato — nome entita' come **campo virtuale `_name`** (il firmware lo legge/scrive come commento eol YAML, non come chiave), **dropdown adapter** da `GET /api/adapters` (WS `akari_manager/adapters`), **add/remove** campi opzionali (`feedback`/`static` per switch/light, `input` per binary_sensor via `ENTITY_OPT` in `panel.js`). Degrada su firmware vecchio (adapter come text, niente `_name`).
 
 ## CONFIG_SECTIONS (15, devono matchare `ALL_FILES` del firmware)
 

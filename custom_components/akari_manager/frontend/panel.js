@@ -24,6 +24,23 @@ const CONFIG_GROUPS = [
   ]},
 ];
 
+// Campi opzionali aggiungibili/rimovibili per gli item delle sezioni entity.
+// La factory produce il template quando l'utente aggiunge il campo.
+const ENTITY_OPT = {
+  switches: { feedback: () => ({ adapter: "", pin: 0, topic: "" }), static: () => true },
+  lights: { feedback: () => ({ adapter: "", pin: 0, topic: "" }), static: () => true },
+  binary_sensors: { input: () => ({ adapter: "", pin: 0 }) },
+};
+
+// Etichette leggibili per le chiavi di config (fallback: la chiave stessa).
+const FIELD_LABELS = {
+  _name: "Nome", topic: "Topic", output: "Output", input: "Input",
+  feedback: "Feedback", static: "Statico", adapter: "Adattatore", pin: "Pin",
+  name: "Nome", pin_up: "Pin salita", pin_down: "Pin discesa", type: "Tipo",
+  device: "Device", address: "Indirizzo", register_type: "Tipo registro",
+  ha_device_class: "Device class HA", device_id: "Device ID",
+};
+
 function esc(s) { return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
 function statusColor(s) {
@@ -73,6 +90,8 @@ class AkariManagerPanel extends HTMLElement {
     this._cfgLoading = false;
     this._cfgMsg = "";
     this._cfgError = "";
+    this._adapters = [];       // adapter risolti dal firmware (per i dropdown)
+    this._adaptersFor = null;  // entry_id per cui _adapters è valido
   }
 
   set hass(h) {
@@ -150,6 +169,14 @@ class AkariManagerPanel extends HTMLElement {
     this._cfgMsg = "";
     this._render();
     try {
+      // Adapter per i dropdown (una volta per device; degrada a [] su firmware vecchio)
+      if (this._adaptersFor !== forEntry) {
+        try {
+          const a = await this._ws("akari_manager/adapters", { entry_id: forEntry });
+          this._adapters = (a && a.adapters) || [];
+        } catch { this._adapters = []; }
+        this._adaptersFor = forEntry;
+      }
       const data = await this._ws("akari_manager/config_get", { entry_id: forEntry, section });
       if (this._entry !== forEntry) return;
       this._cfgData = data;
@@ -366,33 +393,75 @@ class AkariManagerPanel extends HTMLElement {
     return `<div class="cfg-layout"><nav class="cfg-nav">${nav}</nav><div class="cfg-content">${body}</div></div>`;
   }
 
+  _lbl(key) { return FIELD_LABELS[key] || key; }
+
+  _adapterOptions(current) {
+    const names = this._adapters.map(a => a.name);
+    const opts = this._adapters.map(a =>
+      `<option value="${esc(a.name)}" ${a.name === current ? "selected" : ""}>${esc(a.name)} (${esc(a.type)}${a.address ? " " + esc(a.address) : ""})</option>`
+    );
+    if (current && !names.includes(current)) {
+      opts.unshift(`<option value="${esc(current)}" selected>${esc(current)} (sconosciuto)</option>`);
+    } else if (!current) {
+      opts.unshift(`<option value="" selected>—</option>`);
+    }
+    return opts.join("");
+  }
+
   _fieldsHtml(obj, path) {
     if (obj == null) return "";
     if (Array.isArray(obj)) return this._arrayHtml(obj, path);
     if (typeof obj !== "object") return "";
 
-    return Object.entries(obj).map(([key, val]) => {
+    const sectionKey = path[0];
+    const optSpec = (path.length === 2 && typeof path[1] === "number") ? ENTITY_OPT[sectionKey] : null;
+    const optKeys = optSpec ? new Set(Object.keys(optSpec)) : new Set();
+
+    let html = "";
+
+    // Nome (campo virtuale _name) sempre in cima, evidenziato.
+    if ("_name" in obj) {
+      const nid = [...path, "_name"].join(".");
+      html += `<div class="row name-row"><label>Nome</label><input type="text" data-path="${esc(nid)}" value="${esc(obj._name ?? "")}" placeholder="(nessun nome)"/></div>`;
+    }
+
+    html += Object.keys(obj).filter(k => k !== "_name").map(key => {
       const p = [...path, key];
       const pid = p.join(".");
+      const val = obj[key];
+      const rm = optKeys.has(key) ? `<button class="btn sm danger fieldrm" data-rmfield="${esc(pid)}" title="Rimuovi campo">×</button>` : "";
 
       if (val != null && typeof val === "object") {
-        return `<fieldset class="nested"><legend>${esc(key)}</legend>${this._fieldsHtml(val, p)}</fieldset>`;
+        return `<fieldset class="nested"><legend>${esc(this._lbl(key))}${rm}</legend>${this._fieldsHtml(val, p)}</fieldset>`;
       }
-
+      if (key === "adapter" && this._adapters.length) {
+        return `<div class="row"><label>${esc(this._lbl(key))}</label><select data-path="${esc(pid)}">${this._adapterOptions(val)}</select>${rm}</div>`;
+      }
       if (typeof val === "boolean") {
-        return `<div class="row"><label>${esc(key)}</label><label class="toggle"><input type="checkbox" data-path="${esc(pid)}" ${val ? "checked" : ""}/><span class="slider"></span></label></div>`;
+        return `<div class="row"><label>${esc(this._lbl(key))}</label><label class="toggle"><input type="checkbox" data-path="${esc(pid)}" ${val ? "checked" : ""}/><span class="slider"></span></label>${rm}</div>`;
       }
       if (typeof val === "number") {
-        return `<div class="row"><label>${esc(key)}</label><input type="number" data-path="${esc(pid)}" value="${val}"/></div>`;
+        return `<div class="row"><label>${esc(this._lbl(key))}</label><input type="number" data-path="${esc(pid)}" value="${val}"/>${rm}</div>`;
       }
       if (key === "level" && path.length >= 1 && path[path.length - 1] === "logging") {
         const opts = ["DEBUG","INFO","WARNING","ERROR","CRITICAL"].map(l => `<option value="${l}" ${val === l ? "selected" : ""}>${l}</option>`).join("");
-        return `<div class="row"><label>${esc(key)}</label><select data-path="${esc(pid)}">${opts}</select></div>`;
+        return `<div class="row"><label>${esc(this._lbl(key))}</label><select data-path="${esc(pid)}">${opts}</select></div>`;
       }
 
       const ro = key === "id" && path.length === 1 && path[0] === "instance" ? "readonly" : "";
-      return `<div class="row"><label>${esc(key)}</label><input type="text" data-path="${esc(pid)}" value="${esc(val)}" ${ro}/></div>`;
+      return `<div class="row"><label>${esc(this._lbl(key))}</label><input type="text" data-path="${esc(pid)}" value="${esc(val)}" ${ro}/>${rm}</div>`;
     }).join("");
+
+    // Pulsanti "+ campo" per i campi opzionali assenti (feedback/static/input).
+    if (optSpec) {
+      const missing = Object.keys(optSpec).filter(k => !(k in obj));
+      if (missing.length) {
+        html += `<div class="addfield-row">` + missing.map(k =>
+          `<button class="btn sm sec" data-addfield="${esc(path.join("."))}" data-field="${esc(k)}">+ ${esc(this._lbl(k))}</button>`
+        ).join("") + `</div>`;
+      }
+    }
+    return html;
   }
 
   _arrayHtml(arr, path) {
@@ -400,11 +469,25 @@ class AkariManagerPanel extends HTMLElement {
     const items = arr.map((item, i) => {
       const ip = [...path, i];
       if (item != null && typeof item === "object") {
-        return `<div class="arr-item"><div class="arr-hdr"><span>#${i + 1}</span><button class="btn sm danger" data-rm="${pid}" data-idx="${i}">Rimuovi</button></div>${this._fieldsHtml(item, ip)}</div>`;
+        const hdr = item._name ? `#${i + 1} — ${esc(item._name)}` : `#${i + 1}`;
+        return `<div class="arr-item"><div class="arr-hdr"><span>${hdr}</span><button class="btn sm danger" data-rm="${pid}" data-idx="${i}">Rimuovi</button></div>${this._fieldsHtml(item, ip)}</div>`;
       }
       return `<div class="row"><label>#${i + 1}</label><input type="text" data-path="${pid}.${i}" value="${esc(item)}"/><button class="btn sm danger" data-rm="${pid}" data-idx="${i}">X</button></div>`;
     }).join("");
     return `<div class="arr">${items}<button class="btn sm sec" data-add="${pid}">+ Aggiungi</button></div>`;
+  }
+
+  _addField(pathArr, field) {
+    let obj = this._cfgData;
+    for (const k of pathArr) obj = obj[k];
+    const factory = ENTITY_OPT[pathArr[0]] && ENTITY_OPT[pathArr[0]][field];
+    obj[field] = factory ? factory() : "";
+  }
+
+  _rmField(pathArr) {
+    let obj = this._cfgData;
+    for (let i = 0; i < pathArr.length - 1; i++) obj = obj[pathArr[i]];
+    delete obj[pathArr[pathArr.length - 1]];
   }
 
   // ─── Event binding ───
@@ -464,6 +547,16 @@ class AkariManagerPanel extends HTMLElement {
     $$("[data-add]").forEach(btn => btn.onclick = () => {
       const path = btn.dataset.add.split(".");
       this._addItem(path);
+      this._render();
+    });
+
+    $$("[data-addfield]").forEach(btn => btn.onclick = () => {
+      this._addField(btn.dataset.addfield.split("."), btn.dataset.field);
+      this._render();
+    });
+
+    $$("[data-rmfield]").forEach(btn => btn.onclick = () => {
+      this._rmField(btn.dataset.rmfield.split("."));
       this._render();
     });
   }
@@ -550,7 +643,7 @@ th { font-weight:500; color:var(--secondary-text-color,#757575); font-size:.85em
 .row > label:not(.toggle) { min-width:140px; font-size:.9em; font-weight:500 }
 .row input[type=text],.row input[type=number],.row select { flex:1; padding:6px 10px; border:1px solid var(--divider-color,#e0e0e0); border-radius:4px; background:var(--primary-background-color,#fafafa); color:var(--primary-text-color,#212121); font-size:.9em }
 .row input[readonly] { opacity:.6; cursor:not-allowed }
-.toggle { position:relative; display:inline-block; width:44px; height:24px; min-width:44px }
+.toggle { position:relative; display:inline-block; flex:0 0 auto; box-sizing:border-box; width:44px; min-width:44px; max-width:44px; height:24px }
 .toggle input { opacity:0; width:0; height:0 }
 .slider { position:absolute; cursor:pointer; inset:0; background:#ccc; border-radius:24px; transition:.3s }
 .slider:before { content:""; position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.3s }
@@ -561,6 +654,11 @@ fieldset.nested legend { font-weight:500; font-size:.9em; padding:0 6px; color:v
 .arr { margin:4px 0 }
 .arr-item { border:1px solid var(--divider-color,#e0e0e0); border-radius:6px; padding:12px; margin-bottom:8px }
 .arr-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; font-weight:500; font-size:.9em }
+.name-row label { color:var(--primary-color,#03a9f4); font-weight:600 }
+.name-row input { font-weight:500 }
+.addfield-row { display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 2px }
+.fieldrm { margin-left:8px; padding:2px 9px; line-height:1; flex:0 0 auto }
+legend .fieldrm { vertical-align:middle }
 @media(max-width:768px) { .cfg-layout{flex-direction:column} .cfg-nav{width:100%;display:flex;flex-wrap:wrap;gap:4px} .nav-group{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:0} .grid{grid-template-columns:1fr} }
 `;
 

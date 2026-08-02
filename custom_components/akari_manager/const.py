@@ -18,6 +18,7 @@ API_RELOAD = "/api/config/reload"
 API_RESTART = "/api/system/restart"
 API_DEVICES = "/api/devices"
 API_DIAGNOSTICS = "/api/diagnostics"
+API_ADAPTERS = "/api/adapters"
 
 # MQTT
 MQTT_DISCOVERY_TOPIC = "home/+/info"

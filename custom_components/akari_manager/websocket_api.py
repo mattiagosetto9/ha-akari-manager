@@ -19,6 +19,7 @@ def register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_devices)
     websocket_api.async_register_command(hass, ws_diagnostics)
     websocket_api.async_register_command(hass, ws_status)
+    websocket_api.async_register_command(hass, ws_adapters)
     websocket_api.async_register_command(hass, ws_config_get)
     websocket_api.async_register_command(hass, ws_config_update)
     websocket_api.async_register_command(hass, ws_config_reload)
@@ -94,6 +95,26 @@ async def ws_status(hass, connection, msg):
         connection.send_error(msg["id"], "connection_error", str(err))
         return
     connection.send_result(msg["id"], {"status": status, "system_info": sys_info})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "akari_manager/adapters",
+        vol.Required("entry_id"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_adapters(hass, connection, msg):
+    """Fetch resolved adapters (for editor dropdowns). Empty list if firmware is old."""
+    coordinator = _get_coordinator(hass, msg["entry_id"])
+    if not coordinator:
+        connection.send_error(msg["id"], "not_found", "Entry non trovata")
+        return
+    try:
+        data = await coordinator.client.get_adapters()
+    except (AkariConnectionError, AkariAuthError):
+        data = {"adapters": []}  # firmware vecchio senza /api/adapters: degrada
+    connection.send_result(msg["id"], data)
 
 
 @websocket_api.websocket_command(
